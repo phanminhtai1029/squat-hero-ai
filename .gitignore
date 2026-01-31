@@ -63,12 +63,26 @@ coverage.xml
 ehthumbs.db
 Thumbs.db
 
-# Benchmark outputs
-*_benchmark.mp4
-*.json
-
 # Logs
 *.log
 
-# Model files (optional - uncomment if you don't want to track)
-# *.pt
+# ═══════════════════════════════════════════════════════════════
+# PROJECT SPECIFIC
+# ═══════════════════════════════════════════════════════════════
+
+# Data files (keep only yaml structure)
+data/Yoga_Poses-Dataset/
+data/*.zip
+*.zip
+
+# Model weights (large files)
+*.pt
+*.task
+pose_landmarker.task
+yolov8n.pt
+
+# Benchmark outputs
+*_benchmark.mp4
+
+# Keep evaluation results in repo but ignore local test outputs
+# evaluation/*.json  # Uncomment to ignore
