@@ -1,191 +1,239 @@
 """
-Squat AI - Real-time Squat Analysis Pipeline
-=============================================
+Yoga Pose AI - Real-time Pose Recognition Pipeline
+===================================================
 
-Pipeline 4 bước:
-1. Frame Capture - Lấy frame từ webcam
-2. Person Cropping - Crop người bằng YOLO v8
-3. Pose Detection - Detect keypoints bằng MediaPipe
-4. Pose Comparison - So sánh và đưa ra feedback
+5-Step Rule-Based Pipeline:
+1. Frame Capture - Get frames from webcam/video
+2. Person Detection - Detect person using YOLO
+3. Pose Estimation - Estimate pose using MediaPipe
+4. Frame Classification - Classify KEY_POSE vs TRANSITION
+5. Pose Matching - Match pose against database
 
 Usage:
-    python main.py
+    python main.py                     # Webcam
+    python main.py --video path.mp4    # Video file
+    python main.py --image path.jpg    # Single image
     
 Controls:
-    Q - Thoát
-    R - Reset counter
+    Q - Quit
+    R - Reset classifier state
 """
 
 import cv2
 import time
-import sys
+import argparse
+from pathlib import Path
 
-# Import 4 step modules
-from step1_frame_capture.webcam_capture import WebcamCapture
-from step2_person_cropping.yolo_cropper import YoloCropper
-from step3_pose_detection.pose_detector import PoseDetector
-from step4_pose_comparison.pose_comparator import PoseComparator
-from utils.visualization import draw_status_panel, draw_fps, draw_angle_indicator
-import config
+# Import pipeline modules
+from pipeline.step1_frame_capture import WebcamCapture, VideoCapture, ImageCapture
+from pipeline.step2_person_detection import PersonDetector
+from pipeline.step3_pose_estimation import PoseEstimator
+from pipeline.step4_frame_classifier import FrameClassifier, FrameType
+from pipeline.step5_pose_matcher import PoseMatcher
+from utils.angle_calculator import AngleCalculator
 
 
-class SquatAIPipeline:
-    """Main pipeline kết nối 4 bước xử lý."""
+class YogaPosePipeline:
+    """Complete 5-step yoga pose recognition pipeline."""
     
-    def __init__(self):
-        print("Initializing Squat AI Pipeline...")
+    def __init__(
+        self,
+        database_path: str = "data/pose_database.yaml",
+        use_yolo: bool = False,
+        velocity_threshold: float = 0.015
+    ):
+        print("Initializing Yoga Pose Pipeline...")
         
-        # Step 1: Webcam
-        print("  [1/4] Initializing webcam...")
-        self.webcam = WebcamCapture(camera_id=config.CAMERA_ID)
+        # Step 2: Person Detector (optional)
+        if use_yolo:
+            print("  [2/5] Loading YOLO model...")
+            self.person_detector = PersonDetector()
+        else:
+            self.person_detector = None
         
-        # Step 2: YOLO Cropper
-        print("  [2/4] Loading YOLO model...")
-        self.cropper = YoloCropper(
-            model_path=config.YOLO_MODEL,
-            confidence=config.YOLO_CONFIDENCE
-        )
+        # Step 3: Pose Estimator
+        print("  [3/5] Initializing MediaPipe Pose...")
+        self.pose_estimator = PoseEstimator()
         
-        # Step 3: Pose Detector
-        print("  [3/4] Initializing MediaPipe Pose...")
-        self.pose_detector = PoseDetector(
-            min_detection_confidence=config.MIN_DETECTION_CONFIDENCE,
-            min_tracking_confidence=config.MIN_TRACKING_CONFIDENCE
-        )
+        # Step 4: Frame Classifier
+        print("  [4/5] Initializing Frame Classifier...")
+        self.frame_classifier = FrameClassifier(velocity_threshold=velocity_threshold)
         
-        # Step 4: Pose Comparator
-        print("  [4/4] Initializing Pose Comparator...")
-        self.comparator = PoseComparator()
+        # Step 5: Pose Matcher
+        print("  [5/5] Loading Pose Database...")
+        self.pose_matcher = PoseMatcher(database_path)
+        print(f"        Loaded {len(self.pose_matcher.database)} poses")
         
         print("Pipeline ready!")
-        print("Controls: Q=Quit, R=Reset counter")
-        print("-" * 40)
     
     def process_frame(self, frame):
         """
-        Xử lý 1 frame qua 4 bước pipeline.
+        Process a single frame through the full pipeline.
         
         Returns:
-            processed_frame: Frame đã xử lý với UI overlay
-            result: ComparisonResult hoặc None
+            dict with: frame_type, pose_name, similarity, annotated_frame
         """
-        result = None
-        display_frame = frame.copy()
+        result = {
+            'frame_type': None,
+            'pose_name': None,
+            'similarity': 0.0,
+            'confidence': None,
+            'angles': None,
+            'annotated_frame': frame.copy()
+        }
         
-        # Step 2: Person Cropping
-        cropped_frame, bbox = self.cropper.crop_person(frame)
+        # Step 2: Person Detection
+        if self.person_detector:
+            detection = self.person_detector.detect_main_person(frame)
+            person_image = detection.cropped_image
+        else:
+            person_image = frame
         
-        if bbox is not None:
-            # Vẽ bounding box lên display frame
-            cv2.rectangle(display_frame, 
-                         (bbox.x1, bbox.y1), (bbox.x2, bbox.y2),
-                         (255, 0, 0), 2)
+        # Step 3: Pose Estimation
+        pose_result = self.pose_estimator.estimate(person_image)
+        if pose_result is None:
+            result['frame_type'] = 'NO_POSE'
+            return result
         
-        # Step 3: Pose Detection (trên frame gốc để có tọa độ đúng)
-        landmarks = self.pose_detector.detect_pose(frame)
+        # Draw pose on frame
+        result['annotated_frame'] = self.pose_estimator.draw_pose(
+            result['annotated_frame'], 
+            pose_result
+        )
         
-        if landmarks is not None:
-            # Vẽ skeleton
-            display_frame = self.pose_detector.draw_pose(frame)
-            
-            # Vẽ lại bbox nếu có
-            if bbox is not None:
-                cv2.rectangle(display_frame, 
-                             (bbox.x1, bbox.y1), (bbox.x2, bbox.y2),
-                             (255, 0, 0), 2)
-            
-            # Step 4: Pose Comparison
-            result = self.comparator.compare(landmarks)
-            
-            # Vẽ góc gối lên vị trí đầu gối
-            h, w = frame.shape[:2]
-            knee_pos = self.pose_detector.get_pixel_coords(
-                landmarks['left_knee'], w, h
-            )
-            display_frame = draw_angle_indicator(
-                display_frame, 
-                result.knee_angle,
-                (knee_pos[0] + 10, knee_pos[1]),
-                label="Knee",
-                good_threshold=config.SQUAT_ANGLE_THRESHOLD
-            )
+        # Step 4: Frame Classification
+        classification = self.frame_classifier.classify_from_pose_result(pose_result)
+        result['frame_type'] = classification.frame_type.value
         
-        return display_frame, result
+        # Step 5: Pose Matching (only for KEY_POSE frames)
+        if classification.frame_type == FrameType.KEY_POSE:
+            match_result = self.pose_matcher.match_from_pose_result(pose_result)
+            if match_result:
+                result['pose_name'] = match_result.display_name
+                result['similarity'] = match_result.similarity
+                result['confidence'] = match_result.confidence
+        
+        # Get angles for display
+        angle_result = AngleCalculator.from_pose_result(pose_result)
+        if angle_result:
+            result['angles'] = angle_result.angles_degrees
+        
+        return result
     
-    def run(self):
-        """Chạy pipeline real-time."""
-        prev_time = time.time()
+    def run_webcam(self, camera_id: int = 0):
+        """Run pipeline on webcam feed."""
+        print(f"\nStarting webcam (ID: {camera_id})...")
+        print("Press Q to quit, R to reset\n")
+        
+        cap = cv2.VideoCapture(camera_id)
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        
+        fps_start = time.time()
+        frame_count = 0
         fps = 0
         
-        while True:
-            # Step 1: Capture frame
-            frame = self.webcam.get_frame()
-            
-            if frame is None:
-                print("Error: Could not read frame")
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
                 break
             
-            # Flip horizontal để giống gương
-            frame = cv2.flip(frame, 1)
+            # Process frame
+            result = self.process_frame(frame)
             
-            # Process qua pipeline
-            display_frame, result = self.process_frame(frame)
-            
-            # Calculate FPS
-            curr_time = time.time()
-            fps = 1 / (curr_time - prev_time + 1e-6)
-            prev_time = curr_time
-            
-            # Draw UI
-            display_frame = draw_fps(display_frame, fps)
-            
-            if result is not None:
-                display_frame = draw_status_panel(
-                    display_frame,
-                    rep_count=result.rep_count,
-                    phase=result.phase.value,
-                    feedback=result.feedback,
-                    is_good_form=result.is_good_form
-                )
-            else:
-                # Không detect được người
-                cv2.putText(display_frame, "No person detected", 
-                           (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 
-                           1, (0, 0, 255), 2)
+            # Draw results
+            annotated = result['annotated_frame']
+            self._draw_overlay(annotated, result, fps)
             
             # Show frame
-            cv2.imshow(config.WINDOW_NAME, display_frame)
+            cv2.imshow('Yoga Pose AI', annotated)
             
-            # Handle keyboard
+            # Calculate FPS
+            frame_count += 1
+            if frame_count % 30 == 0:
+                fps = 30 / (time.time() - fps_start)
+                fps_start = time.time()
+            
+            # Handle key presses
             key = cv2.waitKey(1) & 0xFF
-            if key == ord('q') or key == ord('Q'):
-                print("\nExiting...")
+            if key == ord('q'):
                 break
-            elif key == ord('r') or key == ord('R'):
-                self.comparator.reset()
-                print("Counter reset!")
+            elif key == ord('r'):
+                self.frame_classifier.reset()
+                print("Classifier reset")
         
-        self.cleanup()
-    
-    def cleanup(self):
-        """Giải phóng resources."""
-        self.webcam.release()
-        self.pose_detector.close()
+        cap.release()
         cv2.destroyAllWindows()
+    
+    def _draw_overlay(self, frame, result, fps):
+        """Draw status overlay on frame."""
+        h, w = frame.shape[:2]
+        
+        # Draw FPS
+        cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        
+        # Draw frame type
+        frame_type = result.get('frame_type', 'UNKNOWN')
+        color = (0, 255, 0) if frame_type == 'KEY_POSE' else (0, 165, 255)
+        cv2.putText(frame, f"State: {frame_type}", (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
+        
+        # Draw pose result (if KEY_POSE)
+        if result.get('pose_name'):
+            pose_name = result['pose_name']
+            similarity = result['similarity'] * 100
+            confidence = result.get('confidence', 'unknown')
+            
+            # Background box
+            cv2.rectangle(frame, (5, h-80), (w-5, h-5), (0, 0, 0), -1)
+            cv2.rectangle(frame, (5, h-80), (w-5, h-5), (0, 255, 0), 2)
+            
+            # Pose name
+            cv2.putText(frame, pose_name, (15, h-50),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+            
+            # Similarity
+            cv2.putText(frame, f"Match: {similarity:.1f}% ({confidence})", (15, h-20),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
+    
+    def close(self):
+        """Release resources."""
+        self.pose_estimator.close()
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Yoga Pose Recognition')
+    parser.add_argument('--video', type=str, help='Path to video file')
+    parser.add_argument('--image', type=str, help='Path to image file')
+    parser.add_argument('--camera', type=int, default=0, help='Camera ID')
+    parser.add_argument('--database', type=str, default='data/pose_database.yaml')
+    parser.add_argument('--use-yolo', action='store_true', help='Use YOLO for person detection')
+    args = parser.parse_args()
+    
+    # Initialize pipeline
+    pipeline = YogaPosePipeline(
+        database_path=args.database,
+        use_yolo=args.use_yolo
+    )
+    
     try:
-        pipeline = SquatAIPipeline()
-        pipeline.run()
-    except KeyboardInterrupt:
-        print("\nInterrupted by user")
-    except Exception as e:
-        print(f"Error: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
+        if args.image:
+            # Process single image
+            frame = cv2.imread(args.image)
+            result = pipeline.process_frame(frame)
+            print(f"\nResult: {result['pose_name']} ({result['similarity']*100:.1f}%)")
+            cv2.imshow('Result', result['annotated_frame'])
+            cv2.waitKey(0)
+        elif args.video:
+            # Process video (similar to webcam)
+            print("Video mode not fully implemented yet")
+        else:
+            # Run webcam
+            pipeline.run_webcam(args.camera)
+    finally:
+        pipeline.close()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

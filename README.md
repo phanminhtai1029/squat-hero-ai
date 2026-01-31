@@ -280,65 +280,12 @@ Analyzes pose data to:
 
 ---
 
-## 📈 Benchmark Output Example
-
-```
-==================================================
-BENCHMARK RESULT
-==================================================
-Video: workout_session.mp4
-Timestamp: 2024-01-15T10:30:45
---------------------------------------------------
-METRICS:
-  Total Frames: 1800
-  Detection Rate: 98.5%
-  Total Reps Detected: 15
-  Avg FPS: 28.3
-  Processing Time: 62.45s
---------------------------------------------------
-ANGLE STATS:
-  Min Knee Angle: 72.3°
-  Max Knee Angle: 178.2°
-  Avg Knee Angle: 125.8°
---------------------------------------------------
-Form Errors Detected: 3
-==================================================
-```
-
----
-
-## 🔧 Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| Camera not detected | Check `CAMERA_ID` in config.py (try 0, 1, 2...) |
-| Low FPS | Reduce camera resolution or close other applications |
-| Pose not detected | Ensure full body is visible and well-lit |
-| YOLO model download error | Manually download `yolov8n.pt` from Ultralytics |
-
----
-
-## 🤝 Contributing
-
-Contributions are welcome! Feel free to:
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 📄 License
-
-This project is open source and available under the [MIT License](LICENSE).
-
----
-
 ## 👨‍💻 Author
 
 **Phan Minh Tài**
+
 **Trịnh Khải Nguyên**
+
 **Lê Hoàng Hữu**
 
 ---

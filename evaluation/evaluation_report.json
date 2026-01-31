@@ -1,0 +1,109 @@
+{
+  "total_images": 484,
+  "total_detected": 481,
+  "detection_rate": 0.993801652892562,
+  "top1_accuracy": 0.27234927234927236,
+  "top3_accuracy": 0.4656964656964657,
+  "mean_similarity_correct": 0.9767006008205734,
+  "mean_similarity_wrong": 0.9438006043795908,
+  "avg_latency_ms": 36.998519778499485,
+  "avg_fps": 27.028108313163333,
+  "per_pose_results": {
+    "natarajasana": {
+      "total": 60,
+      "detected": 60,
+      "correct": 1,
+      "accuracy": 0.016666666666666666
+    },
+    "vrukshasana": {
+      "total": 58,
+      "detected": 57,
+      "correct": 24,
+      "accuracy": 0.42105263157894735
+    },
+    "downward_dog": {
+      "total": 60,
+      "detected": 60,
+      "correct": 59,
+      "accuracy": 0.9833333333333333
+    },
+    "veerabhadrasana": {
+      "total": 60,
+      "detected": 60,
+      "correct": 1,
+      "accuracy": 0.016666666666666666
+    },
+    "ardha_chandrasana": {
+      "total": 60,
+      "detected": 58,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "baddha_konasana": {
+      "total": 60,
+      "detected": 60,
+      "correct": 0,
+      "accuracy": 0.0
+    },
+    "triangle": {
+      "total": 60,
+      "detected": 60,
+      "correct": 46,
+      "accuracy": 0.7666666666666667
+    },
+    "utkata_konasana": {
+      "total": 66,
+      "detected": 66,
+      "correct": 0,
+      "accuracy": 0.0
+    }
+  },
+  "confusion_matrix": {
+    "natarajasana": {
+      "vrukshasana": 52,
+      "triangle": 4,
+      "downward_dog": 3,
+      "natarajasana": 1
+    },
+    "vrukshasana": {
+      "downward_dog": 16,
+      "vrukshasana": 24,
+      "ardha_chandrasana": 8,
+      "veerabhadrasana": 8,
+      "natarajasana": 1
+    },
+    "downward_dog": {
+      "downward_dog": 59,
+      "vrukshasana": 1
+    },
+    "veerabhadrasana": {
+      "vrukshasana": 57,
+      "downward_dog": 1,
+      "veerabhadrasana": 1,
+      "ardha_chandrasana": 1
+    },
+    "ardha_chandrasana": {
+      "vrukshasana": 29,
+      "downward_dog": 5,
+      "triangle": 24
+    },
+    "baddha_konasana": {
+      "downward_dog": 10,
+      "triangle": 29,
+      "veerabhadrasana": 20,
+      "vrukshasana": 1
+    },
+    "triangle": {
+      "triangle": 46,
+      "vrukshasana": 13,
+      "veerabhadrasana": 1
+    },
+    "utkata_konasana": {
+      "vrukshasana": 29,
+      "downward_dog": 15,
+      "ardha_chandrasana": 18,
+      "veerabhadrasana": 3,
+      "triangle": 1
+    }
+  }
+}

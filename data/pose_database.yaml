@@ -1,0 +1,259 @@
+metadata:
+  version: '2.0'
+  total_poses: 8
+  source: Yoga_Poses-Dataset (GitHub) - Improved
+  last_updated: '2026-01-31'
+  
+poses:
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STANDING POSES - Forward Bend
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  downward_dog:
+    display_name: Downward Dog (Adho Mukha Svanasana)
+    category: standing
+    difficulty: beginner
+    angles_degrees:
+      left_elbow: 170
+      right_elbow: 168
+      left_shoulder: 160
+      right_shoulder: 158
+      left_knee: 165
+      right_knee: 163
+      left_hip: 85      # KEY: Bent forward sharply
+      right_hip: 87
+    angles_normalized: [0.944, 0.933, 0.889, 0.878, 0.917, 0.906, 0.472, 0.483]
+    weights:
+      left_elbow: 0.5
+      right_elbow: 0.5
+      left_shoulder: 1.0
+      right_shoulder: 1.0
+      left_knee: 1.5      # Important: legs should be straight
+      right_knee: 1.5
+      left_hip: 2.0       # MOST important: bent forward
+      right_hip: 2.0
+    angle_ranges:
+      left_hip: [60, 110]    # Must be bent forward
+      right_hip: [60, 110]
+      left_knee: [150, 180]  # Legs straight
+      right_knee: [150, 180]
+    description: Inverted V shape with hands and feet on ground
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # STANDING POSES - Lateral
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  triangle:
+    display_name: Triangle Pose (Trikonasana)
+    category: standing
+    difficulty: beginner
+    angles_degrees:
+      left_elbow: 165
+      right_elbow: 170
+      left_shoulder: 165
+      right_shoulder: 160
+      left_knee: 170
+      right_knee: 165
+      left_hip: 130      # KEY: Side bend
+      right_hip: 145
+    angles_normalized: [0.917, 0.944, 0.917, 0.889, 0.944, 0.917, 0.722, 0.806]
+    weights:
+      left_elbow: 0.5
+      right_elbow: 0.5
+      left_shoulder: 1.5   # Arms extended
+      right_shoulder: 1.5
+      left_knee: 1.5       # Legs straight
+      right_knee: 1.5
+      left_hip: 1.5        # Side bend
+      right_hip: 1.5
+    angle_ranges:
+      left_knee: [155, 180]
+      right_knee: [155, 180]
+      left_hip: [110, 160]  # Side bend
+      right_hip: [120, 170]
+    description: Side stretch with legs wide and arms extended
+
+  veerabhadrasana:
+    display_name: Warrior Pose (Virabhadrasana)
+    category: standing
+    difficulty: beginner
+    angles_degrees:
+      left_elbow: 170
+      right_elbow: 172
+      left_shoulder: 110    # Arms up or out
+      right_shoulder: 108
+      left_knee: 90         # KEY: Front knee bent 90°
+      right_knee: 165       # Back leg straight
+      left_hip: 120
+      right_hip: 155
+    angles_normalized: [0.944, 0.956, 0.611, 0.600, 0.500, 0.917, 0.667, 0.861]
+    weights:
+      left_elbow: 0.3
+      right_elbow: 0.3
+      left_shoulder: 1.0
+      right_shoulder: 1.0
+      left_knee: 2.5       # CRITICAL: Front knee bent
+      right_knee: 2.0      # Back leg straight
+      left_hip: 1.0
+      right_hip: 1.0
+    angle_ranges:
+      left_knee: [70, 110]    # Front knee ~90°
+      right_knee: [150, 180]  # Back leg straight
+    description: Lunge position with arms raised
+
+  utkata_konasana:
+    display_name: Goddess Pose (Utkata Konasana)
+    category: standing
+    difficulty: beginner
+    angles_degrees:
+      left_elbow: 95        # Arms bent at elbows
+      right_elbow: 92
+      left_shoulder: 85
+      right_shoulder: 88
+      left_knee: 100        # KEY: Both knees bent equally
+      right_knee: 98
+      left_hip: 110
+      right_hip: 108
+    angles_normalized: [0.528, 0.511, 0.472, 0.489, 0.556, 0.544, 0.611, 0.600]
+    weights:
+      left_elbow: 1.5       # Arms bent
+      right_elbow: 1.5
+      left_shoulder: 1.0
+      right_shoulder: 1.0
+      left_knee: 2.0        # Both knees bent symmetrically
+      right_knee: 2.0
+      left_hip: 1.0
+      right_hip: 1.0
+    angle_ranges:
+      left_knee: [80, 120]   # Both knees bent
+      right_knee: [80, 120]
+      left_elbow: [70, 120]  # Arms bent
+      right_elbow: [70, 120]
+    description: Wide squat with bent elbows and knees
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # BALANCING POSES
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  vrukshasana:
+    display_name: Tree Pose (Vrksasana)
+    category: balancing
+    difficulty: beginner
+    angles_degrees:
+      left_elbow: 170
+      right_elbow: 168
+      left_shoulder: 170
+      right_shoulder: 172
+      left_knee: 170        # Standing leg straight
+      right_knee: 45        # KEY: Other leg bent, foot on thigh
+      left_hip: 170
+      right_hip: 80         # KEY: Bent hip
+    angles_normalized: [0.944, 0.933, 0.944, 0.956, 0.944, 0.250, 0.944, 0.444]
+    weights:
+      left_elbow: 0.3
+      right_elbow: 0.3
+      left_shoulder: 0.5
+      right_shoulder: 0.5
+      left_knee: 2.0        # Standing leg must be straight
+      right_knee: 2.5       # CRITICAL: Bent leg
+      left_hip: 1.0
+      right_hip: 1.5        # Bent hip
+    angle_ranges:
+      left_knee: [155, 180]  # Standing leg straight
+      right_knee: [30, 90]   # Bent leg - KEY identifier
+      right_hip: [50, 110]   # Hip open to side
+    description: One foot on opposite thigh, hands in prayer
+
+  natarajasana:
+    display_name: Dancer Pose (Natarajasana)
+    category: balancing
+    difficulty: intermediate
+    angles_degrees:
+      left_elbow: 170
+      right_elbow: 90       # KEY: Reaching back to hold foot
+      left_shoulder: 90     # KEY: Arm forward
+      right_shoulder: 130
+      left_knee: 170        # Standing leg straight
+      right_knee: 70        # Bent leg behind
+      left_hip: 165
+      right_hip: 140        # Extended back
+    angles_normalized: [0.944, 0.500, 0.500, 0.722, 0.944, 0.389, 0.917, 0.778]
+    weights:
+      left_elbow: 0.5
+      right_elbow: 1.5      # Reaching back
+      left_shoulder: 1.5    # Forward reach
+      right_shoulder: 1.0
+      left_knee: 2.0        # Standing leg
+      right_knee: 2.0       # Bent back
+      left_hip: 1.0
+      right_hip: 1.5        # Extended
+    angle_ranges:
+      left_knee: [155, 180]  # Standing straight
+      right_knee: [50, 100]  # Bent back
+      left_shoulder: [60, 120]  # Arm forward
+      right_elbow: [60, 120]    # Reaching back
+    description: Standing on one leg, holding back foot
+
+  ardha_chandrasana:
+    display_name: Half Moon (Ardha Chandrasana)
+    category: balancing
+    difficulty: intermediate
+    angles_degrees:
+      left_elbow: 170
+      right_elbow: 172
+      left_shoulder: 90     # KEY: Arms in T position
+      right_shoulder: 90
+      left_knee: 170        # Standing leg
+      right_knee: 170       # Lifted leg straight (not bent!)
+      left_hip: 165
+      right_hip: 175        # KEY: Lifted leg parallel to ground
+    angles_normalized: [0.944, 0.956, 0.500, 0.500, 0.944, 0.944, 0.917, 0.972]
+    weights:
+      left_elbow: 0.3
+      right_elbow: 0.3
+      left_shoulder: 2.0    # T-position arms
+      right_shoulder: 2.0
+      left_knee: 1.5
+      right_knee: 1.5       # Lifted leg straight
+      left_hip: 1.0
+      right_hip: 1.5
+    angle_ranges:
+      left_shoulder: [70, 110]   # Arms in T
+      right_shoulder: [70, 110]
+      left_knee: [155, 180]
+      right_knee: [155, 180]     # Both legs straight!
+    description: Balancing with one leg lifted parallel to ground
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # SEATED POSES
+  # ═══════════════════════════════════════════════════════════════════════════
+  
+  baddha_konasana:
+    display_name: Bound Angle (Baddha Konasana)
+    category: seated
+    difficulty: beginner
+    angles_degrees:
+      left_elbow: 100
+      right_elbow: 102
+      left_shoulder: 50     # KEY: Hands holding feet
+      right_shoulder: 48
+      left_knee: 45         # KEY: Knees bent to sides
+      right_knee: 43
+      left_hip: 70          # KEY: Sitting upright
+      right_hip: 68
+    angles_normalized: [0.556, 0.567, 0.278, 0.267, 0.250, 0.239, 0.389, 0.378]
+    weights:
+      left_elbow: 1.0
+      right_elbow: 1.0
+      left_shoulder: 1.5    # Reaching down
+      right_shoulder: 1.5
+      left_knee: 2.5        # CRITICAL: Knees bent out
+      right_knee: 2.5
+      left_hip: 1.5         # Seated hip angle
+      right_hip: 1.5
+    angle_ranges:
+      left_knee: [30, 80]    # Knees bent to sides
+      right_knee: [30, 80]
+      left_hip: [50, 100]    # Seated position
+      right_hip: [50, 100]
+    description: Seated with soles of feet together, knees out

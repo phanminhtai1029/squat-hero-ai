@@ -1,0 +1,62 @@
+{
+  "cosine": {
+    "accuracy": 43.22033898305085,
+    "correct": 51,
+    "total": 118,
+    "per_pose": {
+      "natarajasana": 0.0,
+      "vrukshasana": 13.333333333333334,
+      "downward_dog": 93.33333333333333,
+      "veerabhadrasana": 33.33333333333333,
+      "ardha_chandrasana": 7.6923076923076925,
+      "baddha_konasana": 100.0,
+      "triangle": 93.33333333333333,
+      "utkata_konasana": 0.0
+    }
+  },
+  "euclidean": {
+    "accuracy": 33.89830508474576,
+    "correct": 40,
+    "total": 118,
+    "per_pose": {
+      "natarajasana": 0.0,
+      "vrukshasana": 6.666666666666667,
+      "downward_dog": 100.0,
+      "veerabhadrasana": 26.666666666666668,
+      "ardha_chandrasana": 0.0,
+      "baddha_konasana": 100.0,
+      "triangle": 6.666666666666667,
+      "utkata_konasana": 26.666666666666668
+    }
+  },
+  "weighted": {
+    "accuracy": 34.74576271186441,
+    "correct": 41,
+    "total": 118,
+    "per_pose": {
+      "natarajasana": 13.333333333333334,
+      "vrukshasana": 6.666666666666667,
+      "downward_dog": 100.0,
+      "veerabhadrasana": 6.666666666666667,
+      "ardha_chandrasana": 15.384615384615385,
+      "baddha_konasana": 100.0,
+      "triangle": 6.666666666666667,
+      "utkata_konasana": 26.666666666666668
+    }
+  },
+  "combined": {
+    "accuracy": 31.35593220338983,
+    "correct": 37,
+    "total": 118,
+    "per_pose": {
+      "natarajasana": 0.0,
+      "vrukshasana": 6.666666666666667,
+      "downward_dog": 100.0,
+      "veerabhadrasana": 0.0,
+      "ardha_chandrasana": 38.46153846153847,
+      "baddha_konasana": 100.0,
+      "triangle": 0.0,
+      "utkata_konasana": 6.666666666666667
+    }
+  }
+}
