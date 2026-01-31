@@ -44,34 +44,37 @@ def draw_status_panel(frame: np.ndarray,
                       feedback: str,
                       is_good_form: bool) -> np.ndarray:
     """
-    Vẽ panel hiển thị trạng thái.
+    Draw status info directly on frame (no black box, no reps).
     
     Args:
-        frame: Frame ảnh
-        rep_count: Số reps
-        phase: Phase hiện tại
+        frame: Input frame
+        rep_count: Number of reps (ignored)
+        phase: Current phase/pose
         feedback: Text feedback
-        is_good_form: Form có tốt không
+        is_good_form: Whether form is good
     """
     frame_copy = frame.copy()
     h, w = frame_copy.shape[:2]
     
-    # Vẽ background panel
-    overlay = frame_copy.copy()
-    cv2.rectangle(overlay, (10, 10), (300, 130), (0, 0, 0), -1)
-    cv2.addWeighted(overlay, 0.6, frame_copy, 0.4, 0, frame_copy)
+    # No black background - just text with outline for visibility
+    def draw_text_with_outline(img, text, pos, scale, color, thickness=2):
+        """Draw text with black outline for better visibility."""
+        x, y = pos
+        # Black outline
+        cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, scale, (0, 0, 0), thickness + 2)
+        # Colored text
+        cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_SIMPLEX, scale, color, thickness)
     
-    # Vẽ text
-    cv2.putText(frame_copy, f"REPS: {rep_count}", (20, 45),
-                cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 2)
+    # Pose/Phase display - truncate if too long
+    phase_display = phase[:35] if len(phase) > 35 else phase
+    draw_text_with_outline(frame_copy, f"Pose: {phase_display}", (15, 35), 
+                          0.6, (255, 255, 255), 1)
     
-    cv2.putText(frame_copy, f"Phase: {phase}", (20, 75),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (200, 200, 200), 1)
-    
-    # Feedback với màu
+    # Feedback with color
     fb_color = (0, 255, 0) if is_good_form else (0, 165, 255)
-    cv2.putText(frame_copy, feedback[:35], (20, 110),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.5, fb_color, 1)
+    feedback_display = feedback[:45] if len(feedback) > 45 else feedback
+    draw_text_with_outline(frame_copy, feedback_display, (15, 65), 
+                          0.55, fb_color, 1)
     
     return frame_copy
 

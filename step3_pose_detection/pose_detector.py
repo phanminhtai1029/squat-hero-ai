@@ -97,7 +97,7 @@ class PoseDetector:
         ]
     
     def draw_pose(self, frame: np.ndarray) -> np.ndarray:
-        """Vẽ skeleton lên frame."""
+        """Draw body skeleton only (no face keypoints)."""
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         rgb_frame.flags.writeable = False
         results = self.pose.process(rgb_frame)
@@ -106,13 +106,38 @@ class PoseDetector:
         frame_copy = frame.copy()
         
         if results.pose_landmarks:
-            self.mp_drawing.draw_landmarks(
-                frame_copy,
-                results.pose_landmarks,
-                self.mp_pose.POSE_CONNECTIONS,
-                self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
-                self.mp_drawing.DrawingSpec(color=(0, 0, 255), thickness=2)
-            )
+            h, w = frame.shape[:2]
+            landmarks = results.pose_landmarks.landmark
+            
+            # Body keypoint indices (exclude face: 0-10)
+            BODY_POINTS = [11, 12, 13, 14, 15, 16, 23, 24, 25, 26, 27, 28]
+            
+            # Body connections (without face)
+            BODY_CONNECTIONS = [
+                (11, 12),  # shoulders
+                (11, 13), (13, 15),  # left arm
+                (12, 14), (14, 16),  # right arm
+                (11, 23), (12, 24),  # torso
+                (23, 24),  # hips
+                (23, 25), (25, 27),  # left leg
+                (24, 26), (26, 28),  # right leg
+            ]
+            
+            # Draw connections
+            for start_idx, end_idx in BODY_CONNECTIONS:
+                start = landmarks[start_idx]
+                end = landmarks[end_idx]
+                if start.visibility > 0.5 and end.visibility > 0.5:
+                    start_pos = (int(start.x * w), int(start.y * h))
+                    end_pos = (int(end.x * w), int(end.y * h))
+                    cv2.line(frame_copy, start_pos, end_pos, (0, 255, 0), 2)
+            
+            # Draw keypoints
+            for idx in BODY_POINTS:
+                lm = landmarks[idx]
+                if lm.visibility > 0.5:
+                    pos = (int(lm.x * w), int(lm.y * h))
+                    cv2.circle(frame_copy, pos, 5, (0, 0, 255), -1)
         
         return frame_copy
     

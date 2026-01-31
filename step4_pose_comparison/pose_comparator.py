@@ -177,19 +177,19 @@ class PoseComparator:
         )
     
     def _generate_feedback(self, phase: SquatPhase, knee_angle: float, errors: List[FormError]) -> str:
-        """Tạo feedback text cho người dùng."""
+        """Generate feedback text for user."""
         if phase == SquatPhase.STANDING:
-            return "Sẵn sàng! Hãy bắt đầu squat"
+            return "Ready! Start your squat"
         elif phase == SquatPhase.GOING_DOWN:
-            return f"Đang xuống... Góc: {knee_angle:.0f}°"
+            return f"Going down... Angle: {knee_angle:.0f}"
         elif phase == SquatPhase.SQUAT:
             if FormError.BACK_ROUNDING in errors:
-                return "⚠️ Thẳng lưng lên!"
-            return f"✓ Tốt! Giữ tư thế. Góc: {knee_angle:.0f}°"
+                return "Keep your back straight!"
+            return f"Good! Hold position. Angle: {knee_angle:.0f}"
         else:  # GOING_UP
             if FormError.NOT_DEEP_ENOUGH in errors:
-                return "⚠️ Squat sâu hơn!"
-            return f"Đứng lên! Góc: {knee_angle:.0f}°"
+                return "Go deeper!"
+            return f"Standing up! Angle: {knee_angle:.0f}"
     
     def reset(self):
         """Reset counter và state."""
