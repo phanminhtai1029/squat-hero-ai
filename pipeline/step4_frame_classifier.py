@@ -32,7 +32,21 @@ class FrameClassifier:
     
     Classifies frames as KEY_POSE (stable) or TRANSITION (moving) 
     based on pose landmark velocity over a sliding window.
+    
+    Uses only essential keypoints for velocity calculation to reduce noise.
     """
+    
+    # Essential keypoint indices (COCO/YOLOv8-Pose landmark indices)
+    # COCO format: 17 keypoints (0-16)
+    ESSENTIAL_INDICES = [
+        0,      # nose
+        5, 6,   # shoulders
+        7, 8,   # elbows
+        9, 10,  # wrists
+        11, 12, # hips
+        13, 14, # knees
+        15, 16  # ankles
+    ]
     
     def __init__(
         self,
@@ -73,8 +87,11 @@ class FrameClassifier:
         Returns:
             ClassificationResult with frame type and metrics
         """
+        # Filter to essential keypoints only (reduces noise from face/hands)
+        essential_landmarks = landmarks[self.ESSENTIAL_INDICES]
+        
         # Extract positions only (x, y, z)
-        positions = landmarks[:, :3].copy()
+        positions = essential_landmarks[:, :3].copy()
         
         # Add to history
         self.history.append(positions)

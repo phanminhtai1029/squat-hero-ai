@@ -1,29 +1,29 @@
-# 🏋️ Squat Hero AI
+# 🧘 Yoga Pose AI - Real-time Pose Recognition & Analysis
 
 <p align="center">
-  <strong>Real-time AI-Powered Squat Form Analysis & Rep Counter</strong>
+  <strong>AI-Powered Yoga Pose Recognition using GNN & Vector Similarity</strong>
 </p>
 
 <p align="center">
   <a href="#features">Features</a> •
-  <a href="#demo">Demo</a> •
+  <a href="#architecture">Architecture</a> •
   <a href="#installation">Installation</a> •
   <a href="#usage">Usage</a> •
-  <a href="#architecture">Architecture</a> •
-  <a href="#configuration">Configuration</a>
+  <a href="#benchmarks">Benchmarks</a> •
+  <a href="#dataset">Dataset</a>
 </p>
 
 ---
 
 ## 📖 Overview
 
-**Squat Hero AI** is a real-time computer vision application that uses AI to analyze your squat form, count repetitions, and provide instant feedback. Built with Python, it leverages:
+**Yoga Pose AI** is a real-time computer vision system that recognizes and analyzes yoga poses using advanced pose estimation and Graph Neural Networks (GNN). Built with PyTorch and YOLOv8, it supports **115 yoga poses** with high accuracy and real-time performance.
 
-- **YOLOv8** for person detection
-- **MediaPipe Pose** for body keypoint estimation
-- **OpenCV** for real-time video processing
-
-Perfect for fitness enthusiasts, personal trainers, or anyone looking to improve their squat technique!
+### Key Technologies
+- 🎯 **YOLOv8-Pose** - Fast pose detection (CUDA-accelerated)
+- 🧠 **SimplePoseGNN** - 320K parameter encoder for pose embeddings
+- 🔍 **FAISS** - Fast vector similarity search (CPU/GPU)
+- 📊 **OpenCV** - Real-time video processing
 
 ---
 
@@ -31,190 +31,219 @@ Perfect for fitness enthusiasts, personal trainers, or anyone looking to improve
 
 | Feature | Description |
 |---------|-------------|
-| 🎯 **Real-time Analysis** | Instant feedback on your squat form via webcam |
-| 📊 **Rep Counter** | Automatic counting of completed squats |
-| 📐 **Angle Detection** | Measures knee and back angles for form assessment |
-| ⚠️ **Form Correction** | Detects common form errors (back rounding, insufficient depth, etc.) |
-| 🎬 **Benchmark Mode** | Analyze recorded videos for detailed performance metrics |
-| 📈 **JSON Reports** | Export benchmark results for tracking progress |
+| 🧘 **115 Yoga Poses** | Support for 115+ poses from multiple datasets |
+| ⚡ **Real-time** | 597 FPS vector matching, 937 FPS angle matching |
+| 🎯 **Dual Methods** | Angle-based (hand-crafted) + GNN-based (learned) |
+| 📈 **Benchmarked** | Complete baseline metrics on 1,468 test images |
+| 🔢 **Vector Database** | 1,110 pose embeddings with FAISS indexing |
+| 🎬 **Video Pipeline** | Frame capture → Person detection → Pose estimation → Matching |
 
 ---
 
 ## 🔄 Pipeline Architecture
 
-The system uses a **4-step modular pipeline**:
-
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         SQUAT HERO AI PIPELINE                       │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                       │
-│  ┌───────────────┐   ┌───────────────┐   ┌───────────────┐   ┌─────────────────┐
-│  │   STEP 1      │   │   STEP 2      │   │   STEP 3      │   │    STEP 4       │
-│  │ Frame Capture │──▶│Person Cropping│──▶│Pose Detection │──▶│Pose Comparison  │
-│  │   (Webcam)    │   │   (YOLOv8)    │   │  (MediaPipe)  │   │   (Analysis)    │
-│  └───────────────┘   └───────────────┘   └───────────────┘   └─────────────────┘
-│         │                   │                   │                     │
-│         ▼                   ▼                   ▼                     ▼
-│      Raw Frame         Bounding Box       33 Keypoints         Rep Count +
-│                        + Cropped Area     (Body Landmarks)     Form Feedback
-│                                                                       │
-└─────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────┐
+│                     YOGA POSE AI PIPELINE (6 STEPS)                  │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                        │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐ │
+│  │   STEP 1    │  │   STEP 2    │  │   STEP 3    │  │   STEP 4    │ │
+│  │Frame Capture│─▶│Person Detect│─▶│ Pose Est.   │─▶│ Classifier  │ │
+│  │  (OpenCV)   │  │  (YOLOv8)   │  │(YOLOv8-Pose)│  │   (GNN)     │ │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘ │
+│         │                │                │                │          │
+│         ▼                ▼                ▼                ▼          │
+│    Video Frame    Person BBox      17 Keypoints     128D Embedding   │
+│                                     (COCO format)                     │
+│                                                                        │
+│  ┌─────────────┐  ┌─────────────┐                                    │
+│  │   STEP 5    │  │   STEP 6    │                                    │
+│  │  Matcher    │─▶│Visualization│                                    │
+│  │(FAISS/Angle)│  │  (OpenCV)   │                                    │
+│  └─────────────┘  └─────────────┘                                    │
+│         │                │                                            │
+│         ▼                ▼                                            │
+│   Pose Name        Annotated Frame                                   │
+│   + Similarity      + Pose Label                                     │
+│                                                                        │
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Module Breakdown
 
-| Step | Module | Technology | Purpose |
-|------|--------|------------|---------|
-| 1 | `step1_frame_capture/` | OpenCV | Capture frames from webcam or video file |
-| 2 | `step2_person_cropping/` | YOLOv8 | Detect and isolate person in frame |
-| 3 | `step3_pose_detection/` | MediaPipe | Extract 33 body keypoints |
-| 4 | `step4_pose_comparison/` | NumPy | Analyze form, count reps, provide feedback |
+| Module | File | Purpose |
+|--------|------|---------|
+| **Step 1** | `step1_frame_capture.py` | Capture frames from webcam/video |
+| **Step 2** | `step2_person_detection.py` | YOLOv8 person detection & cropping |
+| **Step 3** | `step3_pose_estimation.py` | Extract 17 COCO keypoints |
+| **Step 4** | `step4_frame_classifier.py` | GNN encoder (128D embeddings) |
+| **Step 5a** | `step5a_angle_matcher.py` | Angle-based matching (8 joint angles) |
+| **Step 5b** | `step5b_vector_matcher.py` | FAISS vector similarity search |
+| **Utils** | `angle_calculator.py` | Joint angle computation |
 
 ---
 
 ## 🚀 Installation
 
 ### Prerequisites
+- Python 3.12+
+- CUDA 11.8+ (optional, for GPU acceleration)
+- 8GB+ RAM
 
-- Python 3.8+
-- Webcam (for real-time mode)
-- pip (Python package manager)
-
-### Step 1: Clone the Repository
+### Quick Start
 
 ```bash
-git clone https://github.com/phanminhtai1029/squat-hero-ai.git
+# Clone repository
+git clone https://github.com/yourusername/squat-hero-ai.git
 cd squat-hero-ai
-```
 
-### Step 2: Create Virtual Environment (Recommended)
+# Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
 
-```bash
-python -m venv venv
-
-# Windows
-venv\Scripts\activate
-
-# Linux/macOS
-source venv/bin/activate
-```
-
-### Step 3: Install Dependencies
-
-```bash
+# Install dependencies
 pip install -r requirements.txt
+
+# Download YOLOv8 model
+wget https://github.com/ultralytics/assets/releases/download/v0.0.0/yolov8s-pose.pt
+
+# Optional: Install FAISS for faster matching
+pip install faiss-cpu  # CPU only
+# pip install faiss-gpu  # GPU support
 ```
-
-This will install:
-- `opencv-python>=4.8.0` - Computer vision library
-- `mediapipe>=0.10.0` - Pose estimation
-- `numpy>=1.24.0` - Numerical computing
-- `ultralytics>=8.0.0` - YOLOv8 implementation
-
-> **Note:** The YOLOv8 model (`yolov8n.pt`) is included in the repository for convenience.
 
 ---
 
-## 🎮 Usage
+## 📊 Usage
 
-### Real-time Mode (Webcam)
-
-Launch the application with your webcam:
+### 1. Build Vector Database
 
 ```bash
-python main.py
+# Build pose embeddings from training data (115 poses)
+python ml/build_vector_database_simple.py
+
+# Output: data/pose_vectors_final.npz (1,110 samples, 128D, 513KB)
 ```
 
-**Controls:**
-| Key | Action |
-|-----|--------|
-| `Q` | Quit application |
-| `R` | Reset rep counter |
-
-### Benchmark Mode (Video Analysis)
-
-Analyze a recorded video for detailed metrics:
+### 2. Run Baseline Benchmark
 
 ```bash
-# Basic usage
-python benchmark.py --video path/to/your/video.mp4
+# Test both angle-based and vector-based methods
+python ml/baseline_benchmark.py
 
-# Save output video with overlays
-python benchmark.py --video video.mp4 --save-output
-
-# Export results to JSON
-python benchmark.py --video video.mp4 --save-json results.json
-
-# Run without preview window
-python benchmark.py --video video.mp4 --no-preview
+# Results saved to: evaluation/baseline_benchmark.json
 ```
 
-**Benchmark Options:**
-| Option | Description |
-|--------|-------------|
-| `--video`, `-v` | Path to input video (required) |
-| `--save-output`, `-s` | Save processed video with overlays |
-| `--output`, `-o` | Custom output video path |
-| `--save-json`, `-j` | Export metrics to JSON file |
-| `--no-preview` | Disable preview window |
+### 3. Real-time Pose Recognition (Coming Soon)
 
----
+```bash
+# Run with webcam
+python main.py --mode realtime
 
-## 🔧 Configuration
-
-All configurable parameters are in `config.py`:
-
-```python
-# Camera settings
-CAMERA_ID = 0              # Camera device ID
-TARGET_FPS = 30            # Target frame rate
-
-# YOLO settings
-YOLO_MODEL = "yolov8n.pt"  # Model path
-YOLO_CONFIDENCE = 0.5      # Detection threshold
-
-# Pose detection settings
-MIN_DETECTION_CONFIDENCE = 0.5
-MIN_TRACKING_CONFIDENCE = 0.5
-
-# Squat thresholds (degrees)
-STANDING_ANGLE_THRESHOLD = 160  # > 160° = standing position
-SQUAT_ANGLE_THRESHOLD = 90      # < 90° = full squat depth
-
-# Display settings
-WINDOW_NAME = "Squat AI - Real-time Analysis"
+# Run on video file
+python main.py --mode video --input path/to/video.mp4
 ```
 
 ---
 
-## 📊 Squat Phase Detection
+## 📈 Benchmarks
 
-The system identifies 4 phases of a squat:
+### Baseline Performance (115 Poses, 1,468 Test Images)
 
-```
-STANDING ──────▶ GOING_DOWN ──────▶ SQUAT ──────▶ GOING_UP ──────▶ STANDING
-  (>160°)          (90°-160°)        (<90°)        (90°-160°)        (>160°)
-                                                                      [+1 rep]
-```
+| Method | Accuracy | Precision | Recall | F1 | Speed |
+|--------|----------|-----------|--------|-----|-------|
+| **Angle-based** | **9.18%** | 10.56% | 9.18% | 8.18% | **937 FPS** (1.07ms) |
+| **Vector-based (untrained GNN)** | **0.92%** | 0.01% | 0.92% | 0.03% | **597 FPS** (1.67ms) |
 
-| Phase | Knee Angle | Description |
-|-------|------------|-------------|
-| `STANDING` | > 160° | Upright position, ready to squat |
-| `GOING_DOWN` | 90° - 160° | Descending into squat |
-| `SQUAT` | < 90° | Full squat depth achieved |
-| `GOING_UP` | 90° - 160° | Ascending back to standing |
+**Top 5 Classes (Angle-based):**
+1. Durvasasana: 71.4%
+2. Dandasana: 55.6%
+3. Trikonasana: 50.0%
+4. Virabhadrasana III: 50.0%
+5. Prasarita Padottanasana: 36.4%
+
+**Hardware:** RTX 3060 Laptop 6GB, CUDA 13.0, Ubuntu 22.04
+
+**Notes:**
+- Angle method: Hand-crafted features, no training needed
+- Vector method: Random GNN weights (baseline before training)
+- After GNN training, expected >20% accuracy
 
 ---
 
-## ⚠️ Form Error Detection
+## 📦 Dataset
 
-The system checks for common squat form errors:
+### Merged Dataset (115 Poses, 9,125 Images)
 
-| Error | Detection Method | Feedback |
-|-------|-----------------|----------|
-| **Not Deep Enough** | Knee angle > threshold when standing up | "⚠️ Squat sâu hơn!" |
-| **Back Rounding** | Back angle < 100° during squat | "⚠️ Thẳng lưng lên!" |
+**Sources:**
+1. **Yoga_Poses-Dataset** - 8 poses, 484 images
+2. **Yoga Posture Dataset** (Kaggle) - 47 poses, 2,756 images
+3. **Yoga 107 Poses** (Kaggle) - 107 poses, 5,991 images
+
+**Split:**
+- Train: 6,342 images (70%)
+- Validation: 1,315 images (15%)
+- Test: 1,468 images (15%)
+
+**Download Datasets:**
+
+```bash
+# Kaggle datasets (requires Kaggle API credentials)
+kaggle datasets download -d tr1gg3rtrash/yoga-posture-dataset
+kaggle datasets download -d ujjwalchowdhury/yoga-pose-classification
+
+# Extract to data/
+unzip yoga-posture-dataset.zip -d data/
+unzip yoga-pose-classification.zip -d data/
+```
+
+**Build Final Dataset:**
+
+```bash
+# Merge all 3 datasets, normalize pose names, filter <20 samples
+python ml/merge_all_datasets.py
+
+# Verify merge correctness
+python ml/verify_merge.py
+
+# Analyze dataset sufficiency
+python ml/analyze_dataset_sufficiency.py
+```
+
+---
+
+## 🧠 Model Architecture
+
+### SimplePoseGNN (320K Parameters)
+
+```
+Input: (17, 2) keypoints [x, y]
+  ↓
+Edge Index: Skeleton connectivity (COCO format)
+  ↓
+GraphConv1: 2 → 64 channels + ReLU + Dropout(0.2)
+  ↓
+GraphConv2: 64 → 128 channels + ReLU + Dropout(0.2)
+  ↓
+GraphConv3: 128 → 256 channels + ReLU
+  ↓
+Global Mean Pooling: (17, 256) → (256,)
+  ↓
+Linear: 256 → 128D embedding
+  ↓
+L2 Normalize
+  ↓
+Output: 128D vector for FAISS matching
+```
+
+**Training Config (Planned):**
+- Optimizer: AdamW (lr=1e-3, weight_decay=1e-4)
+- Loss: TripletMarginLoss (margin=0.2)
+- Batch size: 32
+- Epochs: 50
+- Data augmentation: Random rotation, scaling, noise
 
 ---
 
@@ -222,74 +251,100 @@ The system checks for common squat form errors:
 
 ```
 squat-hero-ai/
-├── main.py                      # 🚀 Main application entry point
-├── benchmark.py                 # 📊 Video benchmark runner
-├── config.py                    # ⚙️  Configuration settings
-├── requirements.txt             # 📦 Python dependencies
-├── yolov8n.pt                   # 🤖 Pre-trained YOLO model
-│
-├── step1_frame_capture/         # 📸 Frame capture module
-│   ├── __init__.py
-│   ├── webcam_capture.py        #    Real-time webcam capture
-│   └── video_extractor.py       #    Video file frame extraction
-│
-├── step2_person_cropping/       # 👤 Person detection module
-│   ├── __init__.py
-│   └── yolo_cropper.py          #    YOLOv8-based person detection
-│
-├── step3_pose_detection/        # 🦴 Pose estimation module
-│   ├── __init__.py
-│   └── pose_detector.py         #    MediaPipe pose detection
-│
-├── step4_pose_comparison/       # 📐 Pose analysis module
-│   ├── __init__.py
-│   └── pose_comparator.py       #    Form analysis & rep counting
-│
-└── utils/                       # 🛠️  Utility functions
-    ├── __init__.py
-    └── visualization.py         #    UI overlay drawing
+├── pipeline/               # 6-step modular pipeline
+│   ├── step1_frame_capture.py
+│   ├── step2_person_detection.py
+│   ├── step3_pose_estimation.py
+│   ├── step4_frame_classifier.py
+│   ├── step5a_angle_matcher.py
+│   └── step5b_vector_matcher.py
+├── ml/                     # Training & benchmarks
+│   ├── models/
+│   │   └── pose_gnn_encoder.py        # SimplePoseGNN
+│   ├── baseline_benchmark.py          # Full benchmark
+│   ├── baseline_benchmark_fast.py     # Fast 200-sample test
+│   ├── build_vector_database_simple.py
+│   ├── merge_all_datasets.py
+│   ├── verify_merge.py
+│   └── analyze_dataset_sufficiency.py
+├── utils/                  # Utilities
+│   ├── angle_calculator.py
+│   └── visualization.py
+├── data/                   # Datasets & vectors
+│   ├── processed/
+│   │   └── yoga_final/     # 115 poses, train/val/test
+│   ├── pose_database.yaml
+│   └── pose_vectors_final.npz  # 1,110 embeddings
+├── evaluation/             # Benchmark results
+│   ├── baseline_benchmark.json
+│   ├── comparison_results.json
+│   └── evaluate_pipeline.py
+├── docs/                   # Documentation
+│   ├── IMPLEMENTATION_PLAN_MVP.md
+│   └── YOGA_POSE_AI_PIPELINE.md
+├── config.py               # Configuration
+├── main.py                 # Entry point
+├── requirements.txt        # Dependencies
+└── README.md               # This file
 ```
 
 ---
 
-## 🔍 Key Classes
+## ⚙️ Configuration
 
-### `SquatAIPipeline` (main.py)
-The main orchestrator that connects all 4 pipeline steps.
+Edit `config.py` for custom settings:
 
-### `WebcamCapture` (step1_frame_capture/webcam_capture.py)
-Handles real-time webcam frame capture with configurable resolution.
+```python
+# Pose Detection
+POSE_MODEL = 'yolov8s-pose.pt'  # or yolov8m-pose.pt (more accurate)
+POSE_CONFIDENCE = 0.3
 
-### `YoloCropper` (step2_person_cropping/yolo_cropper.py)
-Uses YOLOv8 to detect and crop the person from each frame.
+# Person Detection  
+PERSON_CONFIDENCE = 0.5
+PERSON_IOU = 0.5
 
-### `PoseDetector` (step3_pose_detection/pose_detector.py)
-Extracts 33 body keypoints using MediaPipe Pose, focusing on joints relevant for squat analysis:
-- Hip (left/right)
-- Knee (left/right)
-- Ankle (left/right)
-- Shoulder (left/right)
+# Vector Matching
+VECTOR_DATABASE = 'data/pose_vectors_final.npz'
+TOP_K_MATCHES = 5
+MIN_SIMILARITY = 0.15
 
-### `PoseComparator` (step4_pose_comparison/pose_comparator.py)
-Analyzes pose data to:
-- Calculate knee and back angles
-- Determine squat phase
-- Count repetitions
-- Detect form errors
-- Generate feedback messages
+# Angle Matching
+ANGLE_JOINTS = ['elbow', 'shoulder', 'hip', 'knee']  # 8 angles total
+```
 
 ---
 
-## 👨‍💻 Author
+## 🎯 Next Steps
 
-**Phan Minh Tài**
-
-**Trịnh Khải Nguyên**
-
-**Lê Hoàng Hữu**
+- [ ] Train GNN encoder on 6,342 training images
+- [ ] Target: >20% accuracy (vs 9.18% angle baseline)
+- [ ] Implement data augmentation
+- [ ] Add real-time webcam interface
+- [ ] Export models to ONNX for deployment
+- [ ] Build web/mobile demo
 
 ---
 
-<p align="center">
-  Made with ❤️ and 🏋️ for fitness enthusiasts
-</p>
+## 📝 License
+
+MIT License - see [LICENSE](LICENSE) file
+
+---
+
+## 🙏 Acknowledgments
+
+- **Datasets**: Yoga_Poses-Dataset, Kaggle Yoga datasets
+- **Models**: Ultralytics YOLOv8, PyTorch Geometric
+- **Libraries**: OpenCV, FAISS, NumPy
+
+---
+
+## 📧 Contact
+
+For questions or collaboration: [your-email@example.com]
+
+**GitHub**: [yourusername/squat-hero-ai](https://github.com/yourusername/squat-hero-ai)
+
+---
+
+<p align="center">Made with ❤️ for the yoga community</p>

@@ -1,11 +1,11 @@
 """
 Step 3: Pose Estimation
-Estimates body pose using MediaPipe Tasks API (v0.10.x+)
+Estimates body pose using YOLOv8-Pose (replaces MediaPipe + Person Detection)
 """
 
 import cv2
 import numpy as np
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from dataclasses import dataclass, field
 
 
@@ -14,8 +14,8 @@ class Landmark:
     """Single pose landmark."""
     x: float  # Normalized [0, 1]
     y: float  # Normalized [0, 1]
-    z: float  # Depth
-    visibility: float
+    z: float  # Depth (not used in COCO keypoints, set to 0)
+    visibility: float  # Confidence in YOLOv8
 
 
 @dataclass
@@ -24,6 +24,8 @@ class PoseResult:
     landmarks: List[Landmark]
     landmark_dict: Dict[str, Landmark] = field(default_factory=dict)
     raw_landmarks: Optional[object] = None
+    bbox: Optional[Tuple[int, int, int, int]] = None  # x1, y1, x2, y2
+    detection_confidence: float = 0.0
     
     def to_numpy(self) -> np.ndarray:
         """Convert landmarks to numpy array (N, 4)."""
@@ -38,140 +40,147 @@ class PoseResult:
 
 
 class PoseEstimator:
-    """Estimate pose using MediaPipe Tasks API."""
+    """Estimate pose using YOLOv8-Pose (combines person detection + pose estimation)."""
     
-    # MediaPipe landmark names (33 landmarks)
+    # COCO keypoint names (17 keypoints)
     LANDMARK_NAMES = [
-        'nose', 'left_eye_inner', 'left_eye', 'left_eye_outer',
-        'right_eye_inner', 'right_eye', 'right_eye_outer',
-        'left_ear', 'right_ear', 'mouth_left', 'mouth_right',
-        'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-        'left_wrist', 'right_wrist', 'left_pinky', 'right_pinky',
-        'left_index', 'right_index', 'left_thumb', 'right_thumb',
-        'left_hip', 'right_hip', 'left_knee', 'right_knee',
-        'left_ankle', 'right_ankle', 'left_heel', 'right_heel',
-        'left_foot_index', 'right_foot_index'
+        'nose',           # 0
+        'left_eye',       # 1
+        'right_eye',      # 2
+        'left_ear',       # 3
+        'right_ear',      # 4
+        'left_shoulder',  # 5
+        'right_shoulder', # 6
+        'left_elbow',     # 7
+        'right_elbow',    # 8
+        'left_wrist',     # 9
+        'right_wrist',    # 10
+        'left_hip',       # 11
+        'right_hip',      # 12
+        'left_knee',      # 13
+        'right_knee',     # 14
+        'left_ankle',     # 15
+        'right_ankle'     # 16
     ]
     
-    # Essential keypoints for yoga (13 keypoints)
+    # Essential keypoints for yoga (only body keypoints, no face details)
     ESSENTIAL_KEYPOINTS = [
+        'nose',           # Reference point only
         'left_shoulder', 'right_shoulder',
         'left_elbow', 'right_elbow',
         'left_wrist', 'right_wrist',
         'left_hip', 'right_hip',
         'left_knee', 'right_knee',
-        'left_ankle', 'right_ankle',
-        'nose'
+        'left_ankle', 'right_ankle'
     ]
+    
+    # Keypoints to draw (exclude eyes and ears for cleaner visualization)
+    DRAW_KEYPOINTS = [0, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
     
     def __init__(
         self,
-        static_image_mode: bool = False,
-        model_complexity: int = 1,
-        min_detection_confidence: float = 0.5,
-        min_tracking_confidence: float = 0.5
+        model_path: str = "yolov8s-pose.pt",
+        confidence_threshold: float = 0.5,
+        device: str = None
     ):
-        self.static_image_mode = static_image_mode
-        self.model_complexity = model_complexity
-        self.min_detection_confidence = min_detection_confidence
-        self.min_tracking_confidence = min_tracking_confidence
-        self.pose_landmarker = None
-        self._use_legacy = False
-        self._init_mediapipe()
+        """
+        Initialize YOLOv8-Pose estimator.
+        
+        Args:
+            model_path: Path to YOLOv8-Pose model (nano/small/medium)
+            confidence_threshold: Minimum confidence for detection
+            device: 'cuda' or 'cpu' (auto-detect if None)
+        """
+        self.model_path = model_path
+        self.confidence_threshold = confidence_threshold
+        self.device = device
+        self.model = None
+        self._init_yolo()
     
-    def _init_mediapipe(self) -> None:
-        """Initialize MediaPipe pose."""
+    def _init_yolo(self) -> None:
+        """Initialize YOLOv8-Pose model."""
         try:
-            # Try new Tasks API first (mediapipe >= 0.10.0)
-            from mediapipe.tasks import python
-            from mediapipe.tasks.python import vision
-            import urllib.request
-            import os
+            from ultralytics import YOLO
+            import torch
             
-            # Download model if not exists
-            model_path = "pose_landmarker.task"
-            if not os.path.exists(model_path):
-                print("Downloading pose landmarker model...")
-                url = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task"
-                urllib.request.urlretrieve(url, model_path)
+            # Auto-detect device
+            if self.device is None:
+                self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
             
-            base_options = python.BaseOptions(model_asset_path=model_path)
-            options = vision.PoseLandmarkerOptions(
-                base_options=base_options,
-                output_segmentation_masks=False,
-                running_mode=vision.RunningMode.IMAGE
-            )
-            self.pose_landmarker = vision.PoseLandmarker.create_from_options(options)
-            self._use_legacy = False
-            print("Using MediaPipe Tasks API")
+            self.model = YOLO(self.model_path)
+            print(f"Using YOLOv8-Pose ({self.model_path}) on {self.device.upper()}")
+            print(f"  Model: {self.model_path}")
+            print(f"  Device: {self.device}")
+            print(f"  Keypoints: {len(self.LANDMARK_NAMES)} (COCO format)")
             
+        except ImportError:
+            print("ERROR: ultralytics not installed. Run: pip install ultralytics")
+            self.model = None
         except Exception as e:
-            print(f"Tasks API failed ({e}), trying legacy API...")
-            try:
-                # Fall back to legacy API
-                import mediapipe as mp
-                self.mp_pose = mp.solutions.pose
-                self.mp_drawing = mp.solutions.drawing_utils
-                self.pose_landmarker = self.mp_pose.Pose(
-                    static_image_mode=self.static_image_mode,
-                    model_complexity=self.model_complexity,
-                    min_detection_confidence=self.min_detection_confidence,
-                    min_tracking_confidence=self.min_tracking_confidence
-                )
-                self._use_legacy = True
-                print("Using MediaPipe Legacy API")
-            except Exception as e2:
-                print(f"Warning: MediaPipe not available ({e2})")
-                self.pose_landmarker = None
+            print(f"ERROR: Failed to load YOLOv8-Pose model: {e}")
+            self.model = None
     
     def estimate(self, image: np.ndarray) -> Optional[PoseResult]:
         """
-        Estimate pose from image.
+        Detect person and estimate pose in one step using YOLOv8-Pose.
         
         Args:
             image: Input image (BGR format)
             
         Returns:
-            PoseResult or None if no pose detected
+            PoseResult or None if no person detected
         """
-        if self.pose_landmarker is None:
+        if self.model is None:
             return None
         
-        if self._use_legacy:
-            return self._estimate_legacy(image)
-        else:
-            return self._estimate_tasks(image)
-    
-    def _estimate_tasks(self, image: np.ndarray) -> Optional[PoseResult]:
-        """Estimate using Tasks API."""
-        from mediapipe.tasks.python import vision
-        import mediapipe as mp
+        # Run YOLOv8-Pose inference
+        results = self.model(image, verbose=False, device=self.device)
         
-        # Convert BGR to RGB
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        # Get first person with highest confidence
+        best_result = None
+        best_conf = 0
         
-        # Create mediapipe image
-        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=image_rgb)
+        for result in results:
+            if result.keypoints is None or len(result.keypoints) == 0:
+                continue
+            
+            boxes = result.boxes
+            if boxes is None or len(boxes) == 0:
+                continue
+            
+            # Get detection confidence
+            conf = float(boxes[0].conf[0])
+            
+            if conf >= self.confidence_threshold and conf > best_conf:
+                best_conf = conf
+                best_result = result
         
-        # Detect pose
-        detection_result = self.pose_landmarker.detect(mp_image)
-        
-        if not detection_result.pose_landmarks or len(detection_result.pose_landmarks) == 0:
+        if best_result is None:
             return None
         
-        # Get first person's landmarks
-        pose_landmarks = detection_result.pose_landmarks[0]
+        # Extract keypoints (shape: [1, 17, 3] where 3 = x, y, conf)
+        keypoints = best_result.keypoints.data[0]  # Get first person
+        h, w = image.shape[:2]
+        
+        # Extract bounding box
+        box = best_result.boxes[0]
+        x1, y1, x2, y2 = map(int, box.xyxy[0].tolist())
         
         # Convert to Landmark objects
         landmarks = []
         landmark_dict = {}
         
-        for i, lm in enumerate(pose_landmarks):
+        for i in range(17):  # COCO has 17 keypoints
+            # YOLOv8 returns pixel coordinates, normalize to [0, 1]
+            x_norm = float(keypoints[i, 0]) / w
+            y_norm = float(keypoints[i, 1]) / h
+            conf = float(keypoints[i, 2])
+            
             landmark = Landmark(
-                x=lm.x,
-                y=lm.y,
-                z=lm.z,
-                visibility=lm.visibility if hasattr(lm, 'visibility') else 1.0
+                x=x_norm,
+                y=y_norm,
+                z=0.0,  # COCO doesn't have depth
+                visibility=conf
             )
             landmarks.append(landmark)
             
@@ -181,40 +190,9 @@ class PoseEstimator:
         return PoseResult(
             landmarks=landmarks,
             landmark_dict=landmark_dict,
-            raw_landmarks=pose_landmarks
-        )
-    
-    def _estimate_legacy(self, image: np.ndarray) -> Optional[PoseResult]:
-        """Estimate using legacy API."""
-        # Convert BGR to RGB
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        
-        # Process image
-        results = self.pose_landmarker.process(image_rgb)
-        
-        if not results.pose_landmarks:
-            return None
-        
-        # Convert to Landmark objects
-        landmarks = []
-        landmark_dict = {}
-        
-        for i, lm in enumerate(results.pose_landmarks.landmark):
-            landmark = Landmark(
-                x=lm.x,
-                y=lm.y,
-                z=lm.z,
-                visibility=lm.visibility
-            )
-            landmarks.append(landmark)
-            
-            if i < len(self.LANDMARK_NAMES):
-                landmark_dict[self.LANDMARK_NAMES[i]] = landmark
-        
-        return PoseResult(
-            landmarks=landmarks,
-            landmark_dict=landmark_dict,
-            raw_landmarks=results.pose_landmarks
+            raw_landmarks=keypoints,
+            bbox=(x1, y1, x2, y2),
+            detection_confidence=best_conf
         )
     
     def get_essential_landmarks(self, pose_result: PoseResult) -> Dict[str, Landmark]:
@@ -229,41 +207,65 @@ class PoseEstimator:
         self, 
         image: np.ndarray, 
         pose_result: PoseResult,
-        draw_connections: bool = True
+        draw_connections: bool = True,
+        draw_bbox: bool = True
     ) -> np.ndarray:
-        """Draw pose landmarks on image."""
+        """Draw pose landmarks and skeleton on image."""
         if pose_result is None:
             return image
         
         annotated = image.copy()
         h, w = image.shape[:2]
         
-        # Draw landmarks
-        for lm in pose_result.landmarks:
-            x = int(lm.x * w)
-            y = int(lm.y * h)
-            cv2.circle(annotated, (x, y), 3, (0, 255, 0), -1)
+        # Draw bounding box
+        if draw_bbox and pose_result.bbox is not None:
+            x1, y1, x2, y2 = pose_result.bbox
+            cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 255), 2)
+            # Draw confidence
+            conf_text = f"{pose_result.detection_confidence:.2f}"
+            cv2.putText(annotated, conf_text, (x1, y1 - 5),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
         
-        # Draw connections
+        # Draw connections (COCO skeleton)
         if draw_connections:
+            # COCO keypoint connections (exclude face connections)
             connections = [
-                (11, 12), (11, 13), (13, 15), (12, 14), (14, 16),
-                (11, 23), (12, 24), (23, 24),
-                (23, 25), (25, 27), (24, 26), (26, 28)
+                # (0, 1), (0, 2),  # nose to eyes - SKIP
+                # (1, 3), (2, 4),  # eyes to ears - SKIP
+                (5, 6),          # shoulders
+                (5, 7), (7, 9),  # left arm
+                (6, 8), (8, 10), # right arm
+                (5, 11), (6, 12), # shoulders to hips
+                (11, 12),        # hips
+                (11, 13), (13, 15), # left leg
+                (12, 14), (14, 16)  # right leg
             ]
             for i, j in connections:
                 if i < len(pose_result.landmarks) and j < len(pose_result.landmarks):
                     lm1 = pose_result.landmarks[i]
                     lm2 = pose_result.landmarks[j]
-                    x1, y1 = int(lm1.x * w), int(lm1.y * h)
-                    x2, y2 = int(lm2.x * w), int(lm2.y * h)
-                    cv2.line(annotated, (x1, y1), (x2, y2), (0, 0, 255), 2)
+                    
+                    # Only draw if both keypoints are visible
+                    if lm1.visibility > 0.5 and lm2.visibility > 0.5:
+                        x1, y1 = int(lm1.x * w), int(lm1.y * h)
+                        x2, y2 = int(lm2.x * w), int(lm2.y * h)
+                        cv2.line(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        
+        # Draw landmarks (only body keypoints, skip eyes and ears)
+        for i in self.DRAW_KEYPOINTS:
+            if i < len(pose_result.landmarks):
+                lm = pose_result.landmarks[i]
+                if lm.visibility > 0.5:  # Only draw visible keypoints
+                    x = int(lm.x * w)
+                    y = int(lm.y * h)
+                    # Color based on visibility
+                    color = (0, int(255 * lm.visibility), 0)
+                    cv2.circle(annotated, (x, y), 4, color, -1)
+                    cv2.circle(annotated, (x, y), 4, (255, 255, 255), 1)
         
         return annotated
     
     def close(self) -> None:
         """Release resources."""
-        if self.pose_landmarker and not self._use_legacy:
-            self.pose_landmarker.close()
-        elif self.pose_landmarker and self._use_legacy:
-            self.pose_landmarker.close()
+        # YOLOv8 handles cleanup automatically
+        pass

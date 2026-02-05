@@ -70,19 +70,42 @@ Thumbs.db
 # PROJECT SPECIFIC
 # ═══════════════════════════════════════════════════════════════
 
-# Data files (keep only yaml structure)
+# Datasets (large files - download separately)
+data/*/
+data/processed/
 data/Yoga_Poses-Dataset/
+data/dataset/
 data/*.zip
 *.zip
 
-# Model weights (large files)
+# Model weights (download separately or train from scratch)
 *.pt
 *.task
+*.pth
 pose_landmarker.task
-yolov8n.pt
+yolov8*.pt
+ml/checkpoints/*.pth
+
+# Vector databases (generated from training data)
+data/*.npz
+data/pose_vectors*.npz
 
 # Benchmark outputs
 *_benchmark.mp4
+benchmark_output.txt
+evaluation/*.log
 
-# Keep evaluation results in repo but ignore local test outputs
-# evaluation/*.json  # Uncomment to ignore
+# Temporary/debug files
+debug_*.py
+tmp_*.py
+temp_*.py
+*_old.py
+output_result.jpg
+
+# Keep essential files in data/
+!data/pose_database.yaml
+!data/README.md
+
+# Keep essential evaluation results
+# evaluation/baseline_benchmark.json - KEEP
+# evaluation/comparison_results.json - KEEP

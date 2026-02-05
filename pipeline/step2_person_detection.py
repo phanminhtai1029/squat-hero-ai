@@ -1,6 +1,15 @@
 """
-Step 2: Person Detection
-Detects persons in frame using YOLOv8.
+Step 2: Person Detection [DEPRECATED]
+==================================
+⚠️ This module is DEPRECATED and no longer used in the main pipeline.
+
+YOLOv8-Pose in step3_pose_estimation.py now handles both:
+  - Person detection (bounding box)
+  - Pose estimation (17 keypoints)
+
+This file is kept for backward compatibility with evaluation scripts.
+
+For new code, use: pipeline.step3_pose_estimation.PoseEstimator
 """
 
 import cv2

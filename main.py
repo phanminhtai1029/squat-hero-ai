@@ -2,12 +2,11 @@
 Yoga Pose AI - Real-time Pose Recognition Pipeline
 ===================================================
 
-5-Step Rule-Based Pipeline:
+4-Step Pipeline (YOLOv8-Pose):
 1. Frame Capture - Get frames from webcam/video
-2. Person Detection - Detect person using YOLO
-3. Pose Estimation - Estimate pose using MediaPipe
-4. Frame Classification - Classify KEY_POSE vs TRANSITION
-5. Pose Matching - Match pose against database
+2. Pose Estimation - YOLOv8-Pose (person detection + pose in one step)
+3. Frame Classification - Classify KEY_POSE vs TRANSITION
+4. Pose Matching - Match pose against database
 
 Usage:
     python main.py                     # Webcam
@@ -23,58 +22,82 @@ import cv2
 import time
 import argparse
 from pathlib import Path
+from typing import Dict, Any, Optional
 
-# Import pipeline modules
+# Import configuration
+import config
+
+# Import pipeline modules (4-step pipeline)
 from pipeline.step1_frame_capture import WebcamCapture, VideoCapture, ImageCapture
-from pipeline.step2_person_detection import PersonDetector
-from pipeline.step3_pose_estimation import PoseEstimator
+# step2_person_detection - DEPRECATED (replaced by YOLOv8-Pose in step3)
+from pipeline.step3_pose_estimation import PoseEstimator  # YOLOv8-Pose (detection + pose)
 from pipeline.step4_frame_classifier import FrameClassifier, FrameType
 from pipeline.step5_pose_matcher import PoseMatcher
 from utils.angle_calculator import AngleCalculator
+from utils.visualization import draw_status_overlay, draw_pose_result
 
 
 class YogaPosePipeline:
-    """Complete 5-step yoga pose recognition pipeline."""
+    """Complete 4-step yoga pose recognition pipeline using YOLOv8-Pose."""
     
     def __init__(
         self,
-        database_path: str = "data/pose_database.yaml",
-        use_yolo: bool = False,
-        velocity_threshold: float = 0.015
+        database_path: str = None,
+        use_yolo: bool = False,  # Deprecated, kept for backward compatibility
+        velocity_threshold: float = None
     ):
-        print("Initializing Yoga Pose Pipeline...")
+        """
+        Initialize the pipeline.
         
-        # Step 2: Person Detector (optional)
-        if use_yolo:
-            print("  [2/5] Loading YOLO model...")
-            self.person_detector = PersonDetector()
-        else:
-            self.person_detector = None
+        Args:
+            database_path: Path to pose database YAML (default from config)
+            use_yolo: Deprecated (YOLOv8-Pose is always used)
+            velocity_threshold: Velocity threshold for frame classifier (default from config)
+        """
+        # Use config defaults if not specified
+        database_path = database_path or config.DATABASE_PATH
+        velocity_threshold = velocity_threshold or config.VELOCITY_THRESHOLD
         
-        # Step 3: Pose Estimator
-        print("  [3/5] Initializing MediaPipe Pose...")
-        self.pose_estimator = PoseEstimator()
+        print("Initializing Yoga Pose Pipeline (YOLOv8-Pose)...")
+        
+        # Step 2: YOLOv8-Pose (combines person detection + pose estimation)
+        print("  [2/4] Loading YOLOv8-Pose model...")
+        self.pose_estimator = PoseEstimator(
+            model_path=config.YOLOV8_POSE_MODEL,
+            confidence_threshold=config.YOLOV8_CONFIDENCE,
+            device=config.YOLOV8_DEVICE
+        )
+        
+        # Legacy: Person Detector (deprecated, YOLOv8-Pose does this)
+        self.person_detector = None
         
         # Step 4: Frame Classifier
-        print("  [4/5] Initializing Frame Classifier...")
-        self.frame_classifier = FrameClassifier(velocity_threshold=velocity_threshold)
+        print("  [3/4] Initializing Frame Classifier...")
+        self.frame_classifier = FrameClassifier(
+            velocity_threshold=velocity_threshold,
+            window_size=config.WINDOW_SIZE,
+            stability_frames=config.STABILITY_FRAMES
+        )
         
         # Step 5: Pose Matcher
-        print("  [5/5] Loading Pose Database...")
-        self.pose_matcher = PoseMatcher(database_path)
+        print("  [4/4] Loading Pose Database...")
+        self.pose_matcher = PoseMatcher(
+            database_path=database_path,
+            method=config.MATCH_METHOD
+        )
         print(f"        Loaded {len(self.pose_matcher.database)} poses")
         
-        print("Pipeline ready!")
+        print("Pipeline ready!\n")
     
-    def process_frame(self, frame):
+    def process_frame(self, frame) -> Dict[str, Any]:
         """
         Process a single frame through the full pipeline.
         
         Returns:
-            dict with: frame_type, pose_name, similarity, annotated_frame
+            dict with: frame_type, pose_name, similarity, confidence, annotated_frame
         """
         result = {
-            'frame_type': None,
+            'frame_type': 'NO_POSE',
             'pose_name': None,
             'similarity': 0.0,
             'confidence': None,
@@ -82,30 +105,23 @@ class YogaPosePipeline:
             'annotated_frame': frame.copy()
         }
         
-        # Step 2: Person Detection
-        if self.person_detector:
-            detection = self.person_detector.detect_main_person(frame)
-            person_image = detection.cropped_image
-        else:
-            person_image = frame
-        
-        # Step 3: Pose Estimation
-        pose_result = self.pose_estimator.estimate(person_image)
+        # Step 2: YOLOv8-Pose (person detection + pose estimation in one step)
+        pose_result = self.pose_estimator.estimate(frame)
         if pose_result is None:
-            result['frame_type'] = 'NO_POSE'
             return result
         
         # Draw pose on frame
         result['annotated_frame'] = self.pose_estimator.draw_pose(
             result['annotated_frame'], 
-            pose_result
+            pose_result,
+            draw_bbox=True
         )
         
-        # Step 4: Frame Classification
+        # Step 3: Frame Classification
         classification = self.frame_classifier.classify_from_pose_result(pose_result)
         result['frame_type'] = classification.frame_type.value
         
-        # Step 5: Pose Matching (only for KEY_POSE frames)
+        # Step 4: Pose Matching (only for KEY_POSE frames)
         if classification.frame_type == FrameType.KEY_POSE:
             match_result = self.pose_matcher.match_from_pose_result(pose_result)
             if match_result:
@@ -113,40 +129,74 @@ class YogaPosePipeline:
                 result['similarity'] = match_result.similarity
                 result['confidence'] = match_result.confidence
         
-        # Get angles for display
+        # Get angles for display (optional)
         angle_result = AngleCalculator.from_pose_result(pose_result)
         if angle_result:
             result['angles'] = angle_result.angles_degrees
         
         return result
     
-    def run_webcam(self, camera_id: int = 0):
+    def run_webcam(self, camera_id: int = None):
         """Run pipeline on webcam feed."""
-        print(f"\nStarting webcam (ID: {camera_id})...")
+        camera_id = camera_id if camera_id is not None else config.CAMERA_ID
+        
+        print(f"Starting webcam (ID: {camera_id})...")
         print("Press Q to quit, R to reset\n")
         
-        cap = cv2.VideoCapture(camera_id)
-        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        capture = WebcamCapture(
+            camera_id=camera_id,
+            width=config.CAMERA_WIDTH,
+            height=config.CAMERA_HEIGHT
+        )
         
+        self._run_capture_loop(capture)
+    
+    def run_video(self, video_path: str):
+        """Run pipeline on video file."""
+        print(f"Processing video: {video_path}")
+        print("Press Q to quit, R to reset\n")
+        
+        capture = VideoCapture(video_path)
+        self._run_capture_loop(capture)
+    
+    def run_image(self, image_path: str) -> Dict[str, Any]:
+        """Process a single image and return result."""
+        frame = cv2.imread(image_path)
+        if frame is None:
+            print(f"Error: Cannot read image {image_path}")
+            return None
+        
+        result = self.process_frame(frame)
+        return result
+    
+    def _run_capture_loop(self, capture):
+        """Main capture and processing loop."""
         fps_start = time.time()
         frame_count = 0
-        fps = 0
+        fps = 0.0
         
-        while cap.isOpened():
-            ret, frame = cap.read()
+        while capture.is_opened():
+            ret, frame = capture.read()
             if not ret:
                 break
             
             # Process frame
             result = self.process_frame(frame)
             
-            # Draw results
+            # Draw overlays
             annotated = result['annotated_frame']
-            self._draw_overlay(annotated, result, fps)
+            annotated = draw_status_overlay(annotated, result['frame_type'], fps)
+            
+            if result['pose_name']:
+                annotated = draw_pose_result(
+                    annotated,
+                    result['pose_name'],
+                    result['similarity'],
+                    result['confidence']
+                )
             
             # Show frame
-            cv2.imshow('Yoga Pose AI', annotated)
+            cv2.imshow(config.WINDOW_NAME, annotated)
             
             # Calculate FPS
             frame_count += 1
@@ -162,75 +212,80 @@ class YogaPosePipeline:
                 self.frame_classifier.reset()
                 print("Classifier reset")
         
-        cap.release()
+        capture.release()
         cv2.destroyAllWindows()
-    
-    def _draw_overlay(self, frame, result, fps):
-        """Draw status overlay on frame."""
-        h, w = frame.shape[:2]
-        
-        # Draw FPS
-        cv2.putText(frame, f"FPS: {fps:.1f}", (10, 30),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-        
-        # Draw frame type
-        frame_type = result.get('frame_type', 'UNKNOWN')
-        color = (0, 255, 0) if frame_type == 'KEY_POSE' else (0, 165, 255)
-        cv2.putText(frame, f"State: {frame_type}", (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
-        
-        # Draw pose result (if KEY_POSE)
-        if result.get('pose_name'):
-            pose_name = result['pose_name']
-            similarity = result['similarity'] * 100
-            confidence = result.get('confidence', 'unknown')
-            
-            # Background box
-            cv2.rectangle(frame, (5, h-80), (w-5, h-5), (0, 0, 0), -1)
-            cv2.rectangle(frame, (5, h-80), (w-5, h-5), (0, 255, 0), 2)
-            
-            # Pose name
-            cv2.putText(frame, pose_name, (15, h-50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-            
-            # Similarity
-            cv2.putText(frame, f"Match: {similarity:.1f}% ({confidence})", (15, h-20),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1)
     
     def close(self):
         """Release resources."""
         self.pose_estimator.close()
 
 
+def parse_args():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(
+        description='Yoga Pose AI - Real-time Pose Recognition',
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter
+    )
+    
+    # Input source
+    input_group = parser.add_mutually_exclusive_group()
+    input_group.add_argument('--video', type=str, help='Path to video file')
+    input_group.add_argument('--image', type=str, help='Path to image file')
+    
+    # Camera settings
+    parser.add_argument('--camera', type=int, default=config.CAMERA_ID,
+                        help='Camera ID for webcam mode')
+    
+    # Pipeline settings
+    parser.add_argument('--database', type=str, default=config.DATABASE_PATH,
+                        help='Path to pose database YAML')
+    parser.add_argument('--use-yolo', action='store_true',
+                        help='Use YOLO for person detection')
+    parser.add_argument('--velocity-threshold', type=float, 
+                        default=config.VELOCITY_THRESHOLD,
+                        help='Velocity threshold for KEY_POSE detection')
+    
+    return parser.parse_args()
+
+
 def main():
-    parser = argparse.ArgumentParser(description='Yoga Pose Recognition')
-    parser.add_argument('--video', type=str, help='Path to video file')
-    parser.add_argument('--image', type=str, help='Path to image file')
-    parser.add_argument('--camera', type=int, default=0, help='Camera ID')
-    parser.add_argument('--database', type=str, default='data/pose_database.yaml')
-    parser.add_argument('--use-yolo', action='store_true', help='Use YOLO for person detection')
-    args = parser.parse_args()
+    """Main entry point."""
+    args = parse_args()
     
     # Initialize pipeline
     pipeline = YogaPosePipeline(
         database_path=args.database,
-        use_yolo=args.use_yolo
+        use_yolo=args.use_yolo,
+        velocity_threshold=args.velocity_threshold
     )
     
     try:
         if args.image:
             # Process single image
-            frame = cv2.imread(args.image)
-            result = pipeline.process_frame(frame)
-            print(f"\nResult: {result['pose_name']} ({result['similarity']*100:.1f}%)")
-            cv2.imshow('Result', result['annotated_frame'])
-            cv2.waitKey(0)
+            result = pipeline.run_image(args.image)
+            if result:
+                print(f"\nResult: {result['pose_name']} "
+                      f"({result['similarity']*100:.1f}% - {result['confidence']})")
+                print("\n📸 Displaying result...")
+                print("   Press ANY KEY to close the window")
+                cv2.imshow('Result', result['annotated_frame'])
+                
+                # Save output image
+                output_path = 'output_result.jpg'
+                cv2.imwrite(output_path, result['annotated_frame'])
+                print(f"   Saved result to: {output_path}")
+                
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
+        
         elif args.video:
-            # Process video (similar to webcam)
-            print("Video mode not fully implemented yet")
+            # Process video file
+            pipeline.run_video(args.video)
+        
         else:
             # Run webcam
             pipeline.run_webcam(args.camera)
+    
     finally:
         pipeline.close()
 
