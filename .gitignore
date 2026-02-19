@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Raw data & large dataset files
+3DYoga90/data/landmarks/
+3DYoga90_real/
+3DYoga90/data_process/raw_videos/
+
+# Downloaded zip / extracted dataset folder
+official_dataset*/
+
+# Demo video cache (downloaded YT videos)
+demo_output/_cache/
+
+# Cookies / auth
+youtube.com_cookies.txt
+*.txt.enc
+
+# Jupyter / IDE
+.ipynb_checkpoints/
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db

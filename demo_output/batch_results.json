@@ -1,0 +1,102 @@
+[
+  {
+    "url": "https://www.youtube.com/watch?v=sTANio_2E0Q",
+    "label": "Full Body Stretch & Yoga (20min)",
+    "expected_l1": "reclining/standing",
+    "status": "ok",
+    "preds": {
+      "1": {
+        "pose": "standing",
+        "conf": 100.0
+      },
+      "2": {
+        "pose": "standing-straight",
+        "conf": 98.1
+      },
+      "3": {
+        "pose": "mountain",
+        "conf": 85.1
+      }
+    }
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=VaoV1PrYft4",
+    "label": "Morning Yoga for Beginners (10min)",
+    "expected_l1": "standing",
+    "status": "ok",
+    "preds": {
+      "1": {
+        "pose": "sitting",
+        "conf": 94.9
+      },
+      "2": {
+        "pose": "sitting-legs-front",
+        "conf": 76.3
+      },
+      "3": {
+        "pose": "easy-sitting",
+        "conf": 47.1
+      }
+    }
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=j7rKKpwdXNE",
+    "label": "10-Min Yoga for Beginners",
+    "expected_l1": "standing/sitting",
+    "status": "ok",
+    "preds": {
+      "1": {
+        "pose": "sitting",
+        "conf": 85.4
+      },
+      "2": {
+        "pose": "sitting-legs-front",
+        "conf": 66.8
+      },
+      "3": {
+        "pose": "easy-sitting",
+        "conf": 52.8
+      }
+    }
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=4vTJHUDB5ak",
+    "label": "Yoga Neck & Shoulders (15min)",
+    "expected_l1": "sitting/reclining",
+    "status": "ok",
+    "preds": {
+      "1": {
+        "pose": "sitting",
+        "conf": 71.7
+      },
+      "2": {
+        "pose": "sitting-legs-front",
+        "conf": 66.0
+      },
+      "3": {
+        "pose": "scale",
+        "conf": 51.3
+      }
+    }
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=KWBfQjuwp4E",
+    "label": "Yoga for Beginners Full Body",
+    "expected_l1": "standing/sitting",
+    "status": "ok",
+    "preds": {
+      "1": {
+        "pose": "sitting",
+        "conf": 91.8
+      },
+      "2": {
+        "pose": "sitting-legs-front",
+        "conf": 78.5
+      },
+      "3": {
+        "pose": "easy-sitting",
+        "conf": 37.0
+      }
+    }
+  }
+]
