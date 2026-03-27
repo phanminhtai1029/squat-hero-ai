@@ -47,7 +47,7 @@ Với sự phát triển của trí tuệ nhân tạo (AI) và thị giác máy 
 - **Framework:** PyTorch + MediaPipe + OpenCV.
 - **Nền tảng triển khai:** Máy tính cá nhân (Windows/Linux), hỗ trợ GPU CUDA.
 
-![Hình 1.1: Giao diện demo nhận diện tư thế yoga trên video](images/yoga_demo.png)
+
 
 ---
 
