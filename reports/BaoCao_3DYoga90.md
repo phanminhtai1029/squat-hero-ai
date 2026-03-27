@@ -19,7 +19,7 @@
 7. [Huấn luyện mô hình](#7-huấn-luyện-mô-hình)
 8. [Kết quả thực nghiệm](#8-kết-quả-thực-nghiệm)
 9. [Ứng dụng demo](#9-ứng-dụng-demo)
-10. [Kết luận và hướng phát triển](#10-kết-luận-và-hướng-phát-triển)
+10. [Kết luận ](#10-kết-luận)
 11. [Tài liệu tham khảo](#11-tài-liệu-tham-khảo)
 12. [Phụ lục](#12-phụ-lục)
 
