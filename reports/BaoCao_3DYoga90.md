@@ -654,17 +654,6 @@ Dự án đã hoàn thành thành công các mục tiêu đề ra:
 2. **Phụ thuộc MediaPipe:** Nếu người tập bị che khuất một phần hoặc đứng xa camera, chất lượng skeleton giảm.
 3. **Chưa hỗ trợ nhiều người:** Hệ thống hiện tại chỉ theo dõi 1 người trong khung hình.
 
-### 10.3. Hướng phát triển tương lai
-
-| Hướng | Mô tả | Kỳ vọng |
-|-------|-------|---------|
-| **LSTM/Transformer** | Sử dụng chuỗi frame trực tiếp thay vì thống kê tổng hợp | L3 accuracy 88–92% |
-| **Web/Mobile App** | Triển khai trên Streamlit/Flutter cho người dùng phổ thông | Tăng khả năng tiếp cận |
-| **ONNX/TFLite** | Convert model cho thiết bị di động | Chạy trên smartphone |
-| **Multi-person** | Theo dõi nhiều người cùng lúc | Ứng dụng lớp yoga tập thể |
-| **Pose Feedback** | Phản hồi chỉnh sửa tư thế | Hỗ trợ người tập tự sửa lỗi |
-
----
 
 ## 11. Tài Liệu Tham Khảo
 
