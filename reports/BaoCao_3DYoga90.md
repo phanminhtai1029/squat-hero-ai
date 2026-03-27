@@ -570,7 +570,6 @@ python demo_video.py --url "..." --model small --max-sec 60
 4. Dự đoán mỗi 15 frame + vẽ overlay skeleton + confidence bar.
 5. Xuất video annotated vào `demo_output/`.
 
-![Hình 9.1: Giao diện demo phân tích video với skeleton overlay và prediction panel](images/yoga_demo.png)
 
 ### 9.2. Demo webcam thời gian thực
 
@@ -762,65 +761,3 @@ python demo_video.py --url "<YouTube_URL>" --model small
 python realtime_webcam.py --model small
 ```
 
-### Phụ lục D: Từ điển thuật ngữ
-
-| Thuật ngữ | Tiếng Việt | Giải thích |
-|-----------|------------|------------|
-| **Accuracy** | Độ chính xác | Tỷ lệ dự đoán đúng / tổng số mẫu |
-| **Backpropagation** | Lan truyền ngược | Tính gradient của loss theo từng trọng số |
-| **Batch Normalization** | Chuẩn hóa batch | Chuẩn hóa đầu ra mỗi lớp theo mini-batch |
-| **Blind Spot** | Điểm mù | Class có F1=0%, mô hình không bao giờ nhận diện được |
-| **Checkpoint** | Điểm lưu | Bản lưu trọng số mô hình tại thời điểm tốt nhất |
-| **Confidence** | Độ tin cậy | Xác suất softmax của class được dự đoán |
-| **CrossEntropy** | Hàm cross entropy | Hàm loss đo khoảng cách giữa phân phối dự đoán và nhãn thật |
-| **DNN** | Mạng nơ-ron sâu | Mạng có nhiều lớp Dense kết nối đầy đủ |
-| **Dropout** | Tắt ngẫu nhiên | Kỹ thuật chống overfitting bằng cách tắt ngẫu nhiên nơ-ron |
-| **Early Stopping** | Dừng sớm | Ngừng huấn luyện khi model không cải thiện |
-| **Epoch** | Vòng lặp | 1 lần duyệt qua toàn bộ dữ liệu huấn luyện |
-| **F1-Score** | Điểm F1 | Trung bình điều hòa của Precision và Recall |
-| **Feature Vector** | Vector đặc trưng | Dãy số đại diện cho một mẫu dữ liệu |
-| **Imbalanced Data** | Dữ liệu mất cân bằng | Số lượng mẫu giữa các lớp chênh lệch lớn |
-| **Inference** | Suy luận | Dùng mô hình đã train để dự đoán trên dữ liệu mới |
-| **Keypoint/Landmark** | Điểm mốc | Vị trí cụ thể trên cơ thể (vai, khuỷu, hông...) |
-| **Label Smoothing** | Làm mềm nhãn | Thay nhãn one-hot cứng bằng nhãn mềm để chống overconfident |
-| **Loss** | Hàm mất mát | Đo độ sai lệch giữa dự đoán và nhãn thật |
-| **Overfitting** | Quá khớp | Mô hình học thuộc lòng train data, kém trên data mới |
-| **Percentile** | Phân vị | Giá trị mà X% dữ liệu nằm dưới nó |
-| **Pose Estimation** | Ước lượng tư thế | Xác định vị trí khớp cơ thể từ ảnh/video |
-| **Precision** | Độ chính xác dương | Trong các dự đoán dương, bao nhiêu là đúng |
-| **Recall** | Độ phủ | Trong các mẫu dương thật, bao nhiêu được tìm ra |
-| **ReLU** | Hàm kích hoạt | f(x) = max(0, x), cho phép học phi tuyến |
-| **Rolling Window** | Cửa sổ trượt | Giữ N frame gần nhất để dự đoán liên tục |
-| **Skeleton** | Khung xương | Hình người que nối các keypoints |
-| **Softmax** | Hàm softmax | Chuyển vector số thực → phân phối xác suất |
-| **Weighted CE** | CE có trọng số | CrossEntropy với trọng số tỷ lệ nghịch tần suất class |
-
----
-
-<!-- ============================================================ -->
-<!-- 📋 TRẠNG THÁI CHÈN ẢNH                                       -->
-<!-- ============================================================ -->
-<!--                                                               -->
-<!-- ✅ 1.  Mục 1   — yoga_demo.png                                -->
-<!-- ⚠️ 2.  Mục 2.2 — CẦN TỰ CHÈN: Sơ đồ 33 keypoints BlazePose -->
-<!-- ✅ 3.  Mục 2.4 — label_smoothing.png                          -->
-<!-- ✅ 4.  Mục 3.2 — hierarchy_tree.png                           -->
-<!-- ⚠️ 5.  Mục 3.3 — CẦN TỰ TẠO: Biểu đồ phân phối mẫu L3     -->
-<!-- ✅ 6.  Mục 4.1 — system_pipeline.png                          -->
-<!-- ✅ 7.  Mục 5.2B— joint_angle.png                              -->
-<!-- ✅ 8.  Mục 5.2D— feature_vector.png                           -->
-<!-- ✅ 9.  Mục 6.1 — dnn_architecture.png                         -->
-<!-- ✅ 10. Mục 7.2 — training_curves.png                          -->
-<!-- ✅ 11. Mục 8.3 — accuracy_comparison.png                      -->
-<!-- ⚠️ 12. Mục 8.3 — CẦN TỰ TẠO: Confusion Matrix từ data thực -->
-<!-- ✅ 13. Mục 9.1 — yoga_demo.png                                -->
-<!-- ⚠️ 14. Mục 9.2 — CẦN TỰ CHỤP: Screenshot webcam khi chạy    -->
-<!-- ✅ 15. Mục 9.4 — yoga_collage.png                             -->
-<!--                                                               -->
-<!-- Tất cả ảnh nằm trong thư mục reports/images/                  -->
-<!-- ============================================================ -->
-
----
-
-*Báo cáo được biên soạn bởi Squat Hero AI Team.*  
-*Dự án được phát triển trong khuôn khổ Project Môn Học.*
