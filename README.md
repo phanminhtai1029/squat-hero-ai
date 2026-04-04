@@ -4,6 +4,7 @@
   <strong>Real-time AI-Powered Squat Form Analysis & Rep Counter</strong>
 </p>
 
+
 <p align="center">
   <a href="#features">Features</a> •
   <a href="#demo">Demo</a> •
